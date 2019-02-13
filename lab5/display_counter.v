@@ -35,16 +35,16 @@ endmodule
 module rate_divider(input clock, input clear_b, input [31:0] load_cycles, output trigger);
     reg [31:0] q;
 
-    always @(posedge clock) begin
+    always @(posedge clock, negedge clear_b) begin
         if (~clear_b) 
             q <= load_cycles;
-        else if (q == 0)
+        else if (~|q)
             q <= load_cycles;
         else 
-            q = q-1;
+            q <= q - 1;
     end
 
-    assign trigger = (q == 0) ? 1 : 0;
+    assign trigger = ~|q;
 endmodule
 
 module rate_divider_mux(input clock, input clear_b, input [1:0] modes, output enable);
@@ -54,9 +54,9 @@ module rate_divider_mux(input clock, input clear_b, input [1:0] modes, output en
     always @(*) begin
         case (modes)
             2'b00: rate = 1;
-            2'b01: rate = 50 000 000;
-            2'b10: rate = 100 000 000;
-            2'b11: rate = 200 000 000;
+            2'b01: rate = 50000000;
+            2'b10: rate = 25000000;
+            2'b11: rate = 12500000;
         endcase
     end
 
@@ -70,7 +70,7 @@ module counter(input clock, input enable, input reset_n, input load_n, input [3:
         else if (load_n)
             q <= d;
         else if (enable) begin
-            if (q == 4'b1111)
+            if (&q)
                 q <= 0;
             else
                 q <= q + 1; 
